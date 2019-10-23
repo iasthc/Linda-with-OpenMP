@@ -17,19 +17,20 @@ using namespace std;
 //
 //};
 
-void readFromFile(int threadCNT) {
+static string readFromFile(int threadCNT) {
 
+	string result = "";
 	string content = "";
 	ifstream ifs("./server.txt");
 	getline(ifs, content);
-	cout << "readFromFile_0 >>" + content + "\n";
+	result += "readFromFile_0 >>" + content + "\n";
 
 	for (int i = 1; i <= threadCNT; i++) {
-		ifstream ifs("./" + to_string(threadCNT) + ".txt");
+		ifstream ifs("./" + to_string(i) + ".txt");
 		getline(ifs, content);
-		cout << "readFromFile_" + to_string(threadCNT) + " >>" + content + "\n";
+		result += "readFromFile_" + to_string(i) + " >>" + content + "\n";
 	}
-
+	return result + "\n";
 }
 
 vector<any> input2Vec(string s)
@@ -78,60 +79,30 @@ string vec2Str(vector<any>v)
 static void save2txt(vector<vector<any>>& vvaTuple, string fileName) {
 	string content;
 	for (vector<vector<any>>::const_iterator i = vvaTuple.begin(); i != vvaTuple.end(); ++i) {
-		content += vec2Str(*i);
+		content += vec2Str(*i) + ",";
+	}
+	if (content.length() > 0) {
+		content = content.substr(0, content.length() - 1);
 	}
 	ofstream ofs("./" + fileName + ".txt");
 	ofs << "(" + content + ")";
 }
 
-static int cmpVvaVa(vector<vector<any>>& vvaTuple, vector<any>& va) {
+static pair<bool, int> vecExist(vector<vector<any>>& vvaTuple, vector<any>& va) {
 	int index = 0;
+	bool exist = false;
 	for (vector<vector<any>>::const_iterator i = vvaTuple.begin(); i != vvaTuple.end(); ++i) {
-		//cout << vec2Str(*i) << vec2Str(va);
 		if (vec2Str(*i) == vec2Str(va)) {
-			cout << "find!\n";
+			exist = true;
 			break;
 		}
 		index++;
 	}
-	cout << index;
-	return index;
+	return make_pair(exist, index);
 }
 
 int main()
 {
-
-
-	vector<vector<any>> avvs;
-	vector<any> av1;
-	vector<any> av2;
-	vector<any> av3;
-	av1.push_back(1);
-	av1.push_back("out");
-	av1.push_back(3333);
-	av1.push_back(2222);
-	av2.push_back(1);
-	av2.push_back("out");
-	av2.push_back(6666);
-	av2.push_back(7777);
-	av3.push_back(2);
-	av3.push_back("out");
-	av3.push_back(9999);
-	av3.push_back(8888);
-	avvs.push_back(av1);
-	avvs.push_back(av2);
-	avvs.push_back(av3);
-	avvs.push_back(av3);
-	avvs.push_back(av3);
-	for (vector<vector<any>>::const_iterator i = avvs.begin(); i != avvs.end(); ++i) {
-		cout << vec2Str(*i);
-	}
-	avvs.erase(avvs.begin() + cmpVvaVa(avvs, av3));
-	for (vector<vector<any>>::const_iterator i = avvs.begin(); i != avvs.end(); ++i) {
-		cout<< vec2Str(*i);
-	}
-	return 0;
-
 	string threadCNT = "";
 	getline(cin, threadCNT);
 
@@ -153,40 +124,37 @@ int main()
 			ofstream ofs("./" + threadNum + ".txt");
 
 			while (!exit) {
-				if (!s2c.empty()) {
-					if (any_cast<int>(s2c.at(0)) == stoi(threadNum))
+				if (s2c.size() > 0) {
+					vector<any> vaTmp;
+					vaTmp.assign(s2c.begin(), s2c.end());
+					if (vaTmp.size() > 0 && any_cast<int>(vaTmp.at(0)) == stoi(threadNum))
 					{
-						vector<any> vaTmp;
-						vaTmp.assign(s2c.begin(), s2c.end());
-						s2c.pop_back();
+						s2c.clear();
 
 						if (any_cast<string>(vaTmp.at(1)) == "in" || any_cast<string>(vaTmp.at(1)) == "read") {
-							cout << "Thread_" + threadNum + " is waiting for" + any_cast<string>(vaTmp.at(1)) + "\n";
+							cout << "Thread_" + threadNum + " is waiting for " + any_cast<string>(vaTmp.at(1)) + "\n";
 							vsSeq.push_back(threadNum);
 
 							bool exist = false;
 							while (!exist)
 							{
-
 								if (stoi(vsSeq[0]) != any_cast<int>(vaTmp.at(0))) continue;
-								/*auto it = find(vvaServer.begin(), vvaServer.end(), vaTmp);*/
-								//any_of(vvaServer.begin(), vvaServer.end(),[&vaTmp](vector<any>& x){ return x == vaTmp; })
-								//if (any_of(vvaServer.begin(), vvaServer.end(),[&vaTmp](vector<any>& x){ return x == vaTmp; })) {
-									exist = true;
+								//cout << vecExist(vvaServer, vaTmp);
+								if (get<0>(vecExist(vvaServer, vaTmp))) {
 									vvaTuple.push_back(vaTmp); //Linda Read
 									if (any_cast<string>(vaTmp.at(1)) == "in") { //Linda In
 										c2s.assign(vaTmp.begin(), vaTmp.end());
 									}
-								//}
+									exist = true;
+								}
 							}
 
 							vsSeq.erase(vsSeq.begin());
 							save2txt(vvaTuple, threadNum);
-							cout << "Thread_" + threadNum + " >> " + any_cast<string>(vaTmp.at(1)) + " done!\n";
-							readFromFile(stoi(threadCNT));
-
+							cout << "Thread_" + threadNum + " >> " + any_cast<string>(vaTmp.at(1)) + " done!\n" + readFromFile(stoi(threadCNT));
 						}
 					}
+					vaTmp.clear();
 				}
 			}
 		}
@@ -201,14 +169,7 @@ int main()
 			string input;
 
 			while (!exit) {
-				if (!c2s.empty()) {
-					//auto it = find(vvaServer.begin(), vvaServer.end(), c2s);
-					c2s.pop_back();
-					//if (it != vvaServer.end()) {*/
-						//vvaServer.erase(it);
-						save2txt(vvaServer, "server");
-					//}
-				}
+				
 				input = ""; //reset
 				getline(cin, input);
 
@@ -228,13 +189,22 @@ int main()
 					cout << "Thread_" + threadNum + " is waiting for " + i + "\n";
 					vvaServer.push_back(vaInput);
 					save2txt(vvaServer, "server");
-					cout << "Thread_" + threadNum + " >> " + i + " done!\n";
-					readFromFile(stoi(threadCNT));
+					cout << "Thread_" + threadNum + " >> " + i + " done!\n" + readFromFile(stoi(threadCNT));
 				}
 				else if (i == "in" || i == "read") {
 					s2c.assign(vaInput.begin(), vaInput.end());
 				}
 				else { "illegl input!!\n"; continue; }
+
+				if (c2s.size() > 0) {
+					int it = get<1>(vecExist(vvaServer, c2s));
+					c2s.clear();
+					//if (it != vvaServer.end()) {*/
+					vvaServer.erase(vvaServer.begin() + it);
+					save2txt(vvaServer, "server");
+					cout << "Thread_" + threadNum + " >> out done!\n" + readFromFile(stoi(threadCNT));
+					//}
+				}
 			}
 		}
 		catch (exception ex) {
