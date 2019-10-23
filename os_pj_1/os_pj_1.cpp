@@ -52,7 +52,7 @@ vector<any> input2Vec(string s)
 	return vecAny;
 }
 
-string vec2Str(vector<any> v)
+string vec2Str(vector<any>v)
 {
 	string result = "";
 	vector<any> vecAny = v;
@@ -84,18 +84,54 @@ static void save2txt(vector<vector<any>>& vvaTuple, string fileName) {
 	ofs << "(" + content + ")";
 }
 
-static int save2txt(vector<vector<any>>& vvaTuple, vector<any>& va) {
-	string content;
+static int cmpVvaVa(vector<vector<any>>& vvaTuple, vector<any>& va) {
+	int index = 0;
 	for (vector<vector<any>>::const_iterator i = vvaTuple.begin(); i != vvaTuple.end(); ++i) {
-		if (any_cast<vector<any>>(*i) == va) {
+		//cout << vec2Str(*i) << vec2Str(va);
+		if (vec2Str(*i) == vec2Str(va)) {
 			cout << "find!\n";
+			break;
 		}
+		index++;
 	}
-	return 0;
+	cout << index;
+	return index;
 }
 
 int main()
 {
+
+
+	vector<vector<any>> avvs;
+	vector<any> av1;
+	vector<any> av2;
+	vector<any> av3;
+	av1.push_back(1);
+	av1.push_back("out");
+	av1.push_back(3333);
+	av1.push_back(2222);
+	av2.push_back(1);
+	av2.push_back("out");
+	av2.push_back(6666);
+	av2.push_back(7777);
+	av3.push_back(2);
+	av3.push_back("out");
+	av3.push_back(9999);
+	av3.push_back(8888);
+	avvs.push_back(av1);
+	avvs.push_back(av2);
+	avvs.push_back(av3);
+	avvs.push_back(av3);
+	avvs.push_back(av3);
+	for (vector<vector<any>>::const_iterator i = avvs.begin(); i != avvs.end(); ++i) {
+		cout << vec2Str(*i);
+	}
+	avvs.erase(avvs.begin() + cmpVvaVa(avvs, av3));
+	for (vector<vector<any>>::const_iterator i = avvs.begin(); i != avvs.end(); ++i) {
+		cout<< vec2Str(*i);
+	}
+	return 0;
+
 	string threadCNT = "";
 	getline(cin, threadCNT);
 
@@ -166,7 +202,7 @@ int main()
 
 			while (!exit) {
 				if (!c2s.empty()) {
-					auto it = find(vvaServer.begin(), vvaServer.end(), c2s);
+					//auto it = find(vvaServer.begin(), vvaServer.end(), c2s);
 					c2s.pop_back();
 					//if (it != vvaServer.end()) {*/
 						//vvaServer.erase(it);
