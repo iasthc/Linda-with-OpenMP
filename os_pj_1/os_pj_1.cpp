@@ -13,9 +13,6 @@
 #include <fstream>
 #include <any>
 using namespace std;
-//struct any {
-//
-//};
 
 static string readFromFile(int threadCNT) {
 
@@ -23,12 +20,12 @@ static string readFromFile(int threadCNT) {
 	string content = "";
 	ifstream ifs("./server.txt");
 	getline(ifs, content);
-	result += "readFromFile_0 >>" + content + "\n";
+	result += "server.txt >>" + content + "\n";
 
 	for (int i = 1; i <= threadCNT; i++) {
 		ifstream ifs("./" + to_string(i) + ".txt");
 		getline(ifs, content);
-		result += "readFromFile_" + to_string(i) + " >>" + content + "\n";
+		result += to_string(i) + ".txt >>" + content + "\n";
 	}
 	return result + "\n";
 }
@@ -88,19 +85,6 @@ static void save2txt(vector<vector<any>>& vvaTuple, string fileName) {
 	ofs << "(" + content + ")";
 }
 
-static pair<bool, int> vecExist(vector<vector<any>>& vvaTuple, vector<any>& va) {
-	int index = 0;
-	bool exist = false;
-	for (vector<vector<any>>::const_iterator i = vvaTuple.begin(); i != vvaTuple.end(); ++i) {
-		if (vec2Str(*i) == vec2Str(va)) {
-			exist = true;
-			break;
-		}
-		index++;
-	}
-	return make_pair(exist, index);
-}
-
 int main()
 {
 	string threadCNT = "";
@@ -108,57 +92,34 @@ int main()
 
 	//omp variable
 	bool exit = false;
-	vector<any> s2c;
-	vector<any> c2s;
-	vector<string> vsSeq;
-	vector<vector<any>> vvaServer;
+	vector<vector<any>> sharedTuple(stoi(threadCNT) + 1);
 
 #pragma omp parallel num_threads(stoi(threadCNT) + 1) 
 	{
 		string threadNum = to_string(omp_get_thread_num());
+		vector<vector<any>> privateTuple;
 
 		if (omp_get_thread_num() > 0) {
-			vector<vector<any>> vvaTuple;
 
 			cout << "CLIENT: " + threadNum + '\n';
 			ofstream ofs("./" + threadNum + ".txt");
-
-			while (!exit) {
-				if (s2c.size() > 0) {
-					vector<any> vaTmp;
-					vaTmp.assign(s2c.begin(), s2c.end());
-					if (vaTmp.size() > 0 && any_cast<int>(vaTmp.at(0)) == stoi(threadNum))
+			try {
+				while (!exit) {
+				#pragma omp critical
 					{
-						s2c.clear();
-
-						if (any_cast<string>(vaTmp.at(1)) == "in" || any_cast<string>(vaTmp.at(1)) == "read") {
-							cout << "Thread_" + threadNum + " is waiting for " + any_cast<string>(vaTmp.at(1)) + "\n";
-							vsSeq.push_back(threadNum);
-
-							bool exist = false;
-							while (!exist)
-							{
-								if (stoi(vsSeq[0]) != any_cast<int>(vaTmp.at(0))) continue;
-								//cout << vecExist(vvaServer, vaTmp);
-								if (get<0>(vecExist(vvaServer, vaTmp))) {
-									vvaTuple.push_back(vaTmp); //Linda Read
-									if (any_cast<string>(vaTmp.at(1)) == "in") { //Linda In
-										c2s.assign(vaTmp.begin(), vaTmp.end());
-									}
-									exist = true;
-								}
-							}
-
-							vsSeq.erase(vsSeq.begin());
-							save2txt(vvaTuple, threadNum);
-							cout << "Thread_" + threadNum + " >> " + any_cast<string>(vaTmp.at(1)) + " done!\n" + readFromFile(stoi(threadCNT));
+						if (!sharedTuple[stoi(threadNum)].empty()) {
+							privateTuple.push_back(sharedTuple[stoi(threadNum)]);
+							save2txt(privateTuple, threadNum);
+							cout << "Thread_" + to_string(any_cast<int>(sharedTuple[stoi(threadNum)].at(0))) + " >> " + any_cast<string>(sharedTuple[stoi(threadNum)].at(1)) + " done!\n" + readFromFile(stoi(threadCNT));
+							sharedTuple[stoi(threadNum)].clear();
 						}
 					}
-					vaTmp.clear();
 				}
 			}
+			catch (exception ex) {
+				cout << threadNum + ": " + ex.what() + '\n';
+			}
 		}
-
 
 #pragma omp master
 
@@ -168,8 +129,9 @@ int main()
 
 			string input;
 
+			vector<vector<any>> vvaSeq;
+
 			while (!exit) {
-				
 				input = ""; //reset
 				getline(cin, input);
 
@@ -178,32 +140,73 @@ int main()
 				size_t n = count(input.begin(), input.end(), ' ');
 				if (n < 2) { cout << "Error: wrong quantiy of parameters\n"; continue; }
 
-				vector<any> vaInput = input2Vec(input);
+				vector<any> vaInput;
+				regex exp(R"((["].+?["])|([^\s]+))");
+				smatch res;
+				while (regex_search(input, res, exp))
+				{
+					if (string(res[0])[0] == '"')
+						vaInput.push_back(string(res[0]).substr(1, string(res[0]).length() - 2));
+					else if (string(res[0]) == "read" || string(res[0]) == "out" || string(res[0]) == "in")
+						vaInput.push_back(string(res[0]));
+					else
+						vaInput.push_back(stoi(res[0]));
+
+					input = res.suffix();
+				}
 
 				int c = any_cast<int>(vaInput.at(0));
 				string i = any_cast<string>(vaInput.at(1));
 
 				if (c > stoi(threadCNT) + 1) { cout << "Error: Not an exist client\n"; continue; }
+				if (i != "out" && i != "in" && i != "read") { cout << "illegl input!!\n"; continue; }
 
-				if (i == "out") {
-					cout << "Thread_" + threadNum + " is waiting for " + i + "\n";
-					vvaServer.push_back(vaInput);
-					save2txt(vvaServer, "server");
-					cout << "Thread_" + threadNum + " >> " + i + " done!\n" + readFromFile(stoi(threadCNT));
-				}
-				else if (i == "in" || i == "read") {
-					s2c.assign(vaInput.begin(), vaInput.end());
-				}
-				else { "illegl input!!\n"; continue; }
+				bool exist = false;
+				for (vector<vector<any>>::const_iterator it = vvaSeq.begin(); it != vvaSeq.end(); ++it)
+					if (any_cast<int>((*it).at(0)) == any_cast<int>(vaInput.at(0)))
+						exist = true;
 
-				if (c2s.size() > 0) {
-					int it = get<1>(vecExist(vvaServer, c2s));
-					c2s.clear();
-					//if (it != vvaServer.end()) {*/
-					vvaServer.erase(vvaServer.begin() + it);
-					save2txt(vvaServer, "server");
-					cout << "Thread_" + threadNum + " >> out done!\n" + readFromFile(stoi(threadCNT));
-					//}
+				if (!exist) {
+					cout << "Thread_" + to_string(c) + " is waiting for " + i + "\n";
+					if (i == "out") {
+						privateTuple.push_back(vaInput);
+						save2txt(privateTuple, "server");
+						cout << "Thread_" + to_string(c) + " >> " + i + " done!\n" + readFromFile(stoi(threadCNT));
+					}
+					else if (i == "in" || i == "read") {
+						vvaSeq.push_back(vaInput);
+					}
+				}
+				else {
+					cout << "Thread_" + to_string(c) + " is suspended\n";
+				}
+
+				exist = false;
+				int ii = 0;
+				int jj = 0;
+				
+				for (vector<vector<any>>::const_iterator it_i = privateTuple.begin(); it_i != privateTuple.end(); ++it_i) {
+					jj = 0;
+					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
+						if (vec2Str(*it_i) == vec2Str(*it_j)) {
+							(sharedTuple[any_cast<int>((*it_j).at(0))]).assign((*it_j).begin(), (*it_j).end());
+							exist = true;
+							break;
+						}
+						jj++;
+					}
+					if (exist) {
+						break;
+					}
+					ii++;
+				}
+
+				if (exist) {
+					if (any_cast<string>((vvaSeq[jj]).at(1)) == "in") {
+						privateTuple.erase(privateTuple.begin() + ii);
+						save2txt(privateTuple, "server");
+					}
+					vvaSeq.erase(vvaSeq.begin() + jj);
 				}
 			}
 		}
@@ -213,3 +216,4 @@ int main()
 	}
 	return 0;
 }
+
