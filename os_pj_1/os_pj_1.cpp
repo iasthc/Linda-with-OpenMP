@@ -1,15 +1,9 @@
 ﻿#include "pch.h"
 #include <omp.h>
-#include <sstream>
 #include <vector>
 #include <iostream>
 #include <string>
-#include <algorithm>
-#include <typeinfo>
 #include <regex>
-#include <iterator>
-#include <string>
-#include <tuple>
 #include <fstream>
 #include <any>
 using namespace std;
