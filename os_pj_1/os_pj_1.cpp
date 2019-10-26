@@ -6,11 +6,12 @@
 #include <regex>
 #include <fstream>
 #include <any>
+#include <map>
 using namespace std;
 
 static string readFromFile(int threadCNT) {
 
-	string result = "";
+	string result = "==========\n";
 	string content = "";
 	ifstream ifs("./server.txt");
 	getline(ifs, content);
@@ -21,27 +22,7 @@ static string readFromFile(int threadCNT) {
 		getline(ifs, content);
 		result += to_string(i) + ".txt >>" + content + "\n";
 	}
-	return result + "\n";
-}
-
-vector<any> input2Vec(string s)
-{
-	vector<any> vecAny;
-	regex exp(R"((["].+?["])|([^\s]+))");
-	string input = s;
-	smatch res;
-	while (regex_search(input, res, exp))
-	{
-		if (string(res[0])[0] == '"')
-			vecAny.push_back(string(res[0]).substr(1, string(res[0]).length() - 2));
-		else if (string(res[0]) == "read" || string(res[0]) == "out" || string(res[0]) == "in")
-			vecAny.push_back(string(res[0]));
-		else
-			vecAny.push_back(stoi(res[0]));
-
-		input = res.suffix();
-	}
-	return vecAny;
+	return result + "==========\n";
 }
 
 string vec2Str(vector<any>v)
@@ -55,11 +36,34 @@ string vec2Str(vector<any>v)
 
 	while (vecAny.empty() == false)
 	{
-		if (string(vecAny.front().type().name()) == "int") {
+		//cout << string(vecAny.front().type().name()) << endl;
+
+		if (vecAny.front().type().name() == typeid(int).name()) {
 			result += to_string(any_cast<int>(vecAny.front())) + ",";
 		}
-		else { //string
+		else if (vecAny.front().type().name() == typeid(string).name()) {
 			result += "\"" + any_cast<string>(vecAny.front()) + "\",";
+		}
+		else if (vecAny.front().type().name() == typeid(tuple<any &>).name()) {
+			if (get<0>(any_cast<tuple<any &>>(vecAny.front())).type().name() == typeid(int).name()) {
+				result += to_string(any_cast<int>(get<0>(any_cast<tuple<any &>>(vecAny.front())))) + ",";
+			}
+			else if (string(get<0>(any_cast<tuple<any &>>(vecAny.front())).type().name()) == "char const *") {
+				string tmp = any_cast<char const *>(get<0>(any_cast<tuple<any &>>(vecAny.front())));
+				result += "\"" + tmp + "\",";
+			}
+			else if (string(get<0>(any_cast<tuple<any &>>(vecAny.front())).type().name()) == "void") {
+				cout << "void!!!" << endl;
+			}
+			else {
+				cout << "1111" << get<0>(any_cast<tuple<any &>>(vecAny.front())).type().name() << endl;
+			}
+		}
+		else if (vecAny.front().type().name() == typeid(void).name()) {
+			cout << "3333" << vecAny.front().type().name() << endl;
+		}
+		else {
+			cout << "2222" << vecAny.front().type().name() << endl;
 		}
 		vecAny.erase(vecAny.begin());
 	}
@@ -99,7 +103,7 @@ int main()
 			ofstream ofs("./" + threadNum + ".txt");
 			try {
 				while (!exit) {
-				#pragma omp critical
+#pragma omp critical
 					{
 						if (!sharedTuple[stoi(threadNum)].empty()) {
 							privateTuple.push_back(sharedTuple[stoi(threadNum)]);
@@ -124,6 +128,7 @@ int main()
 			string input;
 
 			vector<vector<any>> vvaSeq;
+			map<string, any> mapSA;
 
 			while (!exit) {
 				input = ""; //reset
@@ -137,18 +142,40 @@ int main()
 				vector<any> vaInput;
 				regex exp(R"((["].+?["])|([^\s]+))");
 				smatch res;
+				//bool withQuestionMark = false;
 				while (regex_search(input, res, exp))
 				{
-					if (string(res[0])[0] == '"')
-						vaInput.push_back(string(res[0]).substr(1, string(res[0]).length() - 2));
-					else if (string(res[0]) == "read" || string(res[0]) == "out" || string(res[0]) == "in")
-						vaInput.push_back(string(res[0]));
-					else
-						vaInput.push_back(stoi(res[0]));
+					try {
+						if (string(res[0])[0] == '"')
+							vaInput.push_back(string(res[0]).substr(1, string(res[0]).length() - 2));
+						else if (string(res[0])[0] == '?') {
+							vaInput.push_back(mapSA[string(res[0]).substr(1)]);
+							//withQuestionMark = true;
+						}
+						else if (string(res[0]) == "read" || string(res[0]) == "out" || string(res[0]) == "in")
+							vaInput.push_back(string(res[0]));
+						else
+							vaInput.push_back(stoi(res[0]));
+					}
+					catch (exception ex) {
+						vaInput.push_back(mapSA[string(res[0])]);
+					}
 
 					input = res.suffix();
 				}
+				//塞值到map
+				//Process question mark
 
+
+
+				//cout << vec2Str(vaInput) + '\n';
+
+
+
+
+
+
+				//
 				int c = any_cast<int>(vaInput.at(0));
 				string i = any_cast<string>(vaInput.at(1));
 
@@ -174,11 +201,70 @@ int main()
 				else {
 					cout << "Thread_" + to_string(c) + " is suspended\n";
 				}
+				//================================
+				bool equal = true;
+				cout << (privateTuple).size();
+				cout << (vvaSeq).size();
+				for (vector<vector<any>>::const_iterator it_i = privateTuple.begin(); it_i != privateTuple.end(); ++it_i) {
+					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
+						equal = true;
+						cout << (*it_i).size();
+						cout << (*it_j).size();
+						if ((*it_i).size() == (*it_j).size()) {
+							for (int k = 2; k < (*it_j).size(); k++) {
+								if ((*it_j).at(k).type().name() == typeid(void).name()) {
+									cout << "continue";
+									continue;
+								}
+								cout << (*it_i).at(k).type().name();
+								cout << (*it_j).at(k).type().name();
+								if ((*it_i).at(k).type().name() == (*it_j).at(k).type().name()) {
+									if ((*it_i).at(k).type().name() == typeid(string).name()) {
+										cout << any_cast<string>((*it_i).at(k));
+										cout << any_cast<string>((*it_j).at(k));
+										if (any_cast<string>((*it_i).at(k)) != any_cast<string>((*it_j).at(k))) {
+											equal = false;
+											break;
+										}
+									}
+									else if ((*it_i).at(k).type().name() == typeid(int).name()) {
+										cout << any_cast<int>((*it_i).at(k));
+										cout << any_cast<int>((*it_j).at(k));
+										if (any_cast<int>((*it_i).at(k)) != any_cast<int>((*it_j).at(k))) {
+											equal = false;
+											break;
+										}
+									}
+								}
+								else {
+									equal = false;
+									break;
+								}
+							}
+							cout << equal;
+							if (equal) {
+								//map
+								cout << "equal\n";
+							}
 
+
+						}
+					}
+				}
+
+
+
+
+
+
+
+
+
+				//================================
 				exist = false;
 				int ii = 0;
 				int jj = 0;
-				
+
 				for (vector<vector<any>>::const_iterator it_i = privateTuple.begin(); it_i != privateTuple.end(); ++it_i) {
 					jj = 0;
 					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
