@@ -1,5 +1,4 @@
-﻿#include "pch.h"
-#include <omp.h>
+﻿#include <omp.h>
 #include <vector>
 #include <iostream>
 #include <string>
@@ -10,15 +9,16 @@
 #include <map>
 using namespace std;
 
-void split(const std::string& s,
-	std::vector<std::string>& sv,
-	const char delim = ' ') {
-	sv.clear();
-	std::istringstream iss(s);
-	std::string temp;
+bool debug = false;
+bool readFiles = true;
 
-	while (std::getline(iss, temp, delim)) {
-		sv.emplace_back(std::move(temp));
+void split(const string& s, vector<string>& sv, const char delim = ' ') {
+	sv.clear();
+	istringstream iss(s);
+	string temp;
+
+	while (getline(iss, temp, delim)) {
+		sv.emplace_back(move(temp));
 	}
 
 	return;
@@ -48,17 +48,17 @@ string vec2Str(vector<any>v, bool compare)
 		string result = "";
 		vector<any> vecAny = v;
 		vecAny.assign(v.begin(), v.end());
+		if (vecAny.size() > 2) {
+			vecAny.erase(vecAny.begin());//Client
+			vecAny.erase(vecAny.begin());//Instruction
+		}
 
-		vecAny.erase(vecAny.begin());//Client
-		vecAny.erase(vecAny.begin());//Instruction
 
 		while (vecAny.empty() == false)
 		{
 			if (compare) {
 				if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
-					cout << "compare true\n";
 					result += get<0>(any_cast<pair<string, tuple<any &> >>(vecAny.front())) + ",";
-					cout << result << endl;;
 				}
 			}
 			else {
@@ -77,7 +77,7 @@ string vec2Str(vector<any>v, bool compare)
 					}
 				}
 				else {
-					cout << vecAny.front().type().name() << endl;
+					if (debug) cout << vecAny.front().type().name() << endl;
 				}
 			}
 
@@ -90,7 +90,7 @@ string vec2Str(vector<any>v, bool compare)
 		return "(" + result + ")";
 	}
 	catch (exception ex) {
-		cout << ex.what() + '\n';
+		if (debug) cout << ex.what() + '\n';
 	}
 }
 
@@ -122,51 +122,56 @@ int main()
 
 		if (omp_get_thread_num() > 0) {
 
-			cout << "CLIENT: " + threadNum + '\n';
+			if (debug) cout << "CLIENT: " + threadNum + '\n';
 			ofstream ofs("./" + threadNum + ".txt");
 			try {
 				while (!exit) {
 #pragma omp critical
 					{
 						if (!sharedTuple[stoi(threadNum)].empty()) {
-							privateTuple.push_back(sharedTuple[stoi(threadNum)]);
-							save2txt(privateTuple, threadNum);
-							cout << "Thread_" + to_string(any_cast<int>(sharedTuple[stoi(threadNum)].at(0))) + " >> " + any_cast<string>(sharedTuple[stoi(threadNum)].at(1)) + " done!\n" + readFromFile(stoi(threadCNT));
-							sharedTuple[stoi(threadNum)].clear();
+							try {
+								privateTuple.push_back(sharedTuple[stoi(threadNum)]);
+								save2txt(privateTuple, threadNum);
+								if (debug) cout << "Thread_" + to_string(any_cast<int>(sharedTuple[stoi(threadNum)].at(0))) + " >> " + any_cast<string>(sharedTuple[stoi(threadNum)].at(1)) + " done!\n";
+								sharedTuple[stoi(threadNum)].clear();
+							}
+							catch (exception ex) {
+								if (debug) cout << "Client Exception:" + (string)ex.what() + '\n';
+							}
+
 						}
 					}
 				}
 			}
 			catch (exception ex) {
-				cout << threadNum + ": " + ex.what() + '\n';
+				if (debug) cout << threadNum + ": " + ex.what() + '\n';
 			}
 		}
 
 #pragma omp master
 
 		try {
-			cout << "SERVER: " + threadNum + '\n';
+			if (debug) cout << "SERVER: " + threadNum + '\n';
 			ofstream ofst("./server.txt");
 
 			string input;
 
 			vector<vector<any>> vvaSeq;
 			map<string, any> mapSA;
-			//map<string, string> mapSS;
 
 			while (!exit) {
+				if (readFiles) cout << readFromFile(stoi(threadCNT));
 				input = ""; //reset
 				getline(cin, input);
 
 				if (input == "exit") { exit = true; break; }
 
 				size_t n = count(input.begin(), input.end(), ' ');
-				if (n < 2) { cout << "Error: wrong quantiy of parameters\n"; continue; }
+				if (n < 2) { if (debug) cout << "Error: wrong quantiy of parameters\n"; continue; }
 
 				vector<any> vaInput;
 				regex exp(R"((["].+?["])|([^\s]+))");
 				smatch res;
-				//bool withQuestionMark = false;
 				while (regex_search(input, res, exp))
 				{
 					try {
@@ -174,39 +179,25 @@ int main()
 							vaInput.push_back(string(res[0]).substr(1, string(res[0]).length() - 2));
 						else if (string(res[0])[0] == '?') {
 							vaInput.push_back(make_pair(string(res[0]).substr(1), tie(mapSA[string(res[0]).substr(1)])));
-							//withQuestionMark = true;
 						}
 						else if (string(res[0]) == "read" || string(res[0]) == "out" || string(res[0]) == "in")
 							vaInput.push_back(string(res[0]));
 						else
 							vaInput.push_back(stoi(res[0]));
 					}
-					catch (exception ex) {
+					catch (invalid_argument ia) {
 						vaInput.push_back(make_pair(string(res[0]), tie(mapSA[string(res[0])])));
-						//vaInput.push_back(tie(mapSA[string(res[0])]));
-						//cout << any_cast<int>(mapSA[string(res[0])]);
+						if (debug) cout << "badcast!!\n";
 					}
 
 					input = res.suffix();
 				}
-				//塞值到map
-				//Process question mark
-
-
-
-				//cout << vec2Str(vaInput) + '\n';
-
-
-
-
-
-
-				//
+				
 				int c = any_cast<int>(vaInput.at(0));
 				string i = any_cast<string>(vaInput.at(1));
 
-				if (c > stoi(threadCNT) + 1) { cout << "Error: Not an exist client\n"; continue; }
-				if (i != "out" && i != "in" && i != "read") { cout << "illegl input!!\n"; continue; }
+				if (c > stoi(threadCNT) + 1) { if (debug) cout << "Error: Not an exist client\n"; continue; }
+				if (i != "out" && i != "in" && i != "read") { if (debug) cout << "illegl input!!\n"; continue; }
 
 				bool exist = false;
 				for (vector<vector<any>>::const_iterator it = vvaSeq.begin(); it != vvaSeq.end(); ++it)
@@ -214,46 +205,56 @@ int main()
 						exist = true;
 
 				if (!exist) {
-					cout << "Thread_" + to_string(c) + " is waiting for " + i + "\n";
+					if (debug) cout << "Thread_" + to_string(c) + " is waiting for " + i + "\n";
 					if (i == "out") {
 						privateTuple.push_back(vaInput);
 						save2txt(privateTuple, "server");
-						cout << "Thread_" + to_string(c) + " >> " + i + " done!\n" + readFromFile(stoi(threadCNT));
+						if (debug) cout << "Thread_" + to_string(c) + " >> " + i + " done!\n";
 					}
 					else if (i == "in" || i == "read") {
 						vvaSeq.push_back(vaInput);
 					}
 				}
 				else {
-					cout << "Thread_" + to_string(c) + " is suspended\n";
+					if (debug) cout << "Thread_" + to_string(c) + " is suspended\n";
 				}
-				//================================
+
 				bool equal = true;
 				for (vector<vector<any>>::const_iterator it_i = privateTuple.begin(); it_i != privateTuple.end(); ++it_i) {
 					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
 						equal = true;
 						vector<any> v;
-						//cout << (*it_i).size() << "|" << (*it_j).size() << endl;
+						//if(debug) cout << (*it_i).size() << "|" << (*it_j).size() << endl;
 
 						for (int k = 2; k < (*it_j).size(); k++) {
-							//cout << k << "\n";
+							//if(debug) cout << k << "\n";
 							if ((*it_i).size() == (*it_j).size()) {
 								if ((*it_j).at(k).type().name() == typeid(pair <string, tuple<any &>>).name()) {
-									//cout << "continue\n";
-									v.push_back((*it_i).at(k));
+									if (debug) cout << "continue\n";
+									if ((*it_i).at(k).type().name() == typeid(pair <string, tuple<any &>>).name()) {
+										if (get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(int).name()) {
+											v.push_back(any_cast<int>(get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
+										}
+										else if (get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(string).name()) {
+											v.push_back(any_cast<string>(get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
+										}
+									}
+									else { //string, int
+										v.push_back((*it_i).at(k));
+									}
 									continue;
 								}
-								//cout << (*it_i).at(k).type().name() << "|" << (*it_j).at(k).type().name() << endl;
+								//if(debug) cout << (*it_i).at(k).type().name() << "|" << (*it_j).at(k).type().name() << endl;
 								if ((*it_i).at(k).type().name() == (*it_j).at(k).type().name()) {
 									if ((*it_i).at(k).type().name() == typeid(string).name()) {
-										//cout << any_cast<string>((*it_i).at(k)) << "|" << any_cast<string>((*it_j).at(k)) << endl;
+										//if(debug) cout << any_cast<string>((*it_i).at(k)) << "|" << any_cast<string>((*it_j).at(k)) << endl;
 										if (any_cast<string>((*it_i).at(k)) != any_cast<string>((*it_j).at(k))) {
 											equal = false;
 											break;
 										}
 									}
 									else if ((*it_i).at(k).type().name() == typeid(int).name()) {
-										//cout << any_cast<int>((*it_i).at(k)) << "|" << any_cast<int>((*it_j).at(k)) << endl;
+										//if(debug) cout << any_cast<int>((*it_i).at(k)) << "|" << any_cast<int>((*it_j).at(k)) << endl;
 										if (any_cast<int>((*it_i).at(k)) != any_cast<int>((*it_j).at(k))) {
 											equal = false;
 											break;
@@ -267,66 +268,59 @@ int main()
 							}
 							else {
 								equal = false;
-								//cout << "\nSIZE!=\n" << endl;
+								//if(debug) cout << "\nSIZE!=\n" << endl;
 								break;
 							}
 						}
 						if (equal) {
 							string s = vec2Str(*it_j, true);
-							cout << s <<endl;
-							vector<std::string> sv;
+							if (debug) cout << s << endl;
+							vector<string> sv;
 							split(s, sv, ',');
 
-							cout << sv.size() << endl;
-							cout << v.size() << endl;
+							if (debug) cout << sv.size() << endl;
+							if (debug) cout << v.size() << endl;
 
 							if (!sv.empty()) {
 								string* a = &sv[0];
 								int aa = 0;
 								for (vector<any>::const_iterator iv = v.begin(); iv != v.end(); ++iv) {
-									cout << any_cast<string>(a[aa]) << endl;
+									//if(debug) cout << any_cast<string>(a[aa]) << endl;
+									//if(debug) cout << (*iv).type().name() << endl;
+									//try {
+									//	if(debug) cout << any_cast<string>(*iv) << endl;
+									//}
+									//catch (exception ex) {
+									//	try {
+									//		if(debug) cout << any_cast<int>(*iv) << endl;
+									//	}
+									//	catch (exception ex) {
+									//		//if(debug) cout << any_cast<void>(*iv) << endl;
+									//	}
+									//}
 									mapSA[any_cast<string>(a[aa])] = *iv;
 									aa++;
 								}
 							}
-							cout << "222222"<< endl;
-
-							//mapSA[vec2Str(*it_j, true)] = a;
-							//cout << "\nequal\n" << endl;
-							//cout << "\n\n" + vec2Str(*it_j, false) << endl;
-							//(*it_j).erase((*it_j).begin() + index);
-
-							//(*it_j)[index] = a;
+							if (debug) cout << "END equal" << endl;
 						}
-
-
-
 					}
 				}
 
-
-
-
-
-				//erase 錯
-
-
-
-
-				//================================
 				exist = false;
 				int ii, jj;
 				ii = 0;
 				jj = 0;
 
 				for (vector<vector<any>>::const_iterator it_i = privateTuple.begin(); it_i != privateTuple.end(); ++it_i) {
+					if (debug) cout << "ServerTuple: " << vec2Str(*it_i, false) << (*it_i).size() << ii << endl;
 					jj = 0;
 					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
-						cout << "privateTuple: " <<vec2Str(*it_i, false) << (*it_i).size()<< endl;
-						cout << "vvaSeq: " << vec2Str(*it_j, false) << (*it_j).size() << endl;
+						if (debug) cout << "vvaSeq: " << vec2Str(*it_j, false) << (*it_j).size() << jj << endl;
 						if (vec2Str(*it_i, false) == vec2Str(*it_j, false)) {
 							(sharedTuple[any_cast<int>((*it_j).at(0))]).assign((*it_j).begin(), (*it_j).end());
 							exist = true;
+							if (debug) cout << "exist: " << vec2Str(*it_j, false) << (*it_j).size() << jj << endl;
 							break;
 						}
 						jj++;
@@ -339,6 +333,7 @@ int main()
 
 				if (exist) {
 					if (any_cast<string>((vvaSeq[jj]).at(1)) == "in") {
+						if (debug) cout << "exist" << ii << jj << endl;
 						privateTuple.erase(privateTuple.begin() + ii);
 						save2txt(privateTuple, "server");
 					}
@@ -347,7 +342,7 @@ int main()
 			}
 		}
 		catch (exception ex) {
-			cout << ex.what() + '\n';
+			if (debug) cout << ex.what() + '\n';
 		}
 	}
 	return 0;
