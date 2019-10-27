@@ -113,6 +113,7 @@ int main()
 								save2txt(privateTuple, threadNum);
 								if (debug) cout << "Thread_" + to_string(any_cast<int>(sharedTuple[stoi(threadNum)].at(0))) + " >> " + any_cast<string>(sharedTuple[stoi(threadNum)].at(1)) + " done!\n";
 								sharedTuple[stoi(threadNum)].clear();
+								if (readFiles) cout << readFromFile(stoi(threadCNT));
 							}
 							catch (exception ex) {
 								if (debug) cout << "Client Exception:" + (string)ex.what() + '\n';
@@ -139,7 +140,6 @@ int main()
 			map<string, any> mapSA;
 
 			while (!exit) {
-				if (readFiles) cout << readFromFile(stoi(threadCNT));
 				input = ""; //reset
 				getline(cin, input);
 
@@ -196,6 +196,7 @@ int main()
 						privateTuple.push_back(vaInput);
 						save2txt(privateTuple, "server");
 						if (debug) cout << "Thread_" + to_string(c) + " >> " + i + " done!\n";
+						if (readFiles) cout << readFromFile(stoi(threadCNT));
 					}
 					else if (i == "in" || i == "read") {
 						vvaSeq.push_back(vaInput);
