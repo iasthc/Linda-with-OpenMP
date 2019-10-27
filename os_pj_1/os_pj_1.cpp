@@ -67,8 +67,9 @@ string vec2Str(vector<any>v, bool compare)
 			}
 			else if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
 				if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
-					auto a = (get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front())))));
-					int tmp = any_cast<int>(a);
+					auto a = get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()));
+					auto b = (get<0>(any_cast<tuple<any &>>(a)));
+					int tmp = any_cast<int>(b);
 					result += to_string(tmp) + ",";
 					//result += to_string(std::any_cast<int>((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))))) + ",";
 				}
