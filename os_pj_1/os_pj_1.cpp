@@ -40,7 +40,7 @@ static string readFromFile(int threadCNT) {
 	return result + "==========\n";
 }
 
-string vec2Str(vector<any>v, bool compare)
+string vec2Str(vector<any>v, map<string, any> mapSA, bool compare)
 {
 	string result = "";
 	vector<any> vecAny = v;
@@ -54,8 +54,9 @@ string vec2Str(vector<any>v, bool compare)
 	while (vecAny.empty() == false)
 	{
 		if (compare) {
-			if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
-				result += get<0>(any_cast<pair<string, tuple<any &> >>(vecAny.front())) + ",";
+			if (vecAny.front().type().name() == typeid(tuple<any &>).name()) {
+				string s = any_cast<string>(get<0>(any_cast<tuple<any &>>(vecAny.front())));
+				result += any_cast<string>(mapSA[s]) + ",";
 			}
 		}
 		else {
@@ -65,14 +66,13 @@ string vec2Str(vector<any>v, bool compare)
 			else if (vecAny.front().type().name() == typeid(string).name()) {
 				result += "\"" + any_cast<string>(vecAny.front()) + "\",";
 			}
-			else if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
-				if ((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
-					
-					//result += to_string(any_cast<int>((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))))) + ",";
+			else if (vecAny.front().type().name() == typeid(tuple<any &>).name()) {
+				if ((get<0>(any_cast<tuple<any &>>(vecAny.front()))).type().name() == typeid(int).name()) {
+					result += to_string(any_cast<int>((get<0>(any_cast<tuple<any &>>(vecAny.front()))))) + ",";
 				}
-				/*else if ((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(string).name()) {
-					result += "\"" + any_cast<string>(get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))) + "\",";
-				}*/
+				else if ((get<0>(any_cast<tuple<any &>>(vecAny.front()))).type().name() == typeid(string).name()) {
+					result += "\"" + any_cast<string>(get<0>(any_cast<tuple<any &>>(vecAny.front()))) + "\",";
+				}
 			}
 			else {
 				if (debug) cout << vecAny.front().type().name() << endl;
@@ -89,9 +89,10 @@ string vec2Str(vector<any>v, bool compare)
 }
 
 static void save2txt(vector<vector<any>>& vvaTuple, string fileName) {
+	map<string, any> mapSA;
 	string content;
 	for (vector<vector<any>>::const_iterator i = vvaTuple.begin(); i != vvaTuple.end(); ++i) {
-		content += vec2Str(*i, false) + ",";
+		content += vec2Str(*i, mapSA, false) + ",";
 	}
 	if (content.length() > 0) {
 		content = content.substr(0, content.length() - 1);
@@ -225,7 +226,7 @@ int main()
 						for (int k = 2; k < (*it_j).size(); k++) {
 							//if(debug) cout << k << "\n";
 							if ((*it_i).size() == (*it_j).size()) {
-								if (debug) cout << (*it_j).at(k).type().name() <<endl;
+								if (debug) cout << (*it_j).at(k).type().name() << endl;
 								if ((*it_j).at(k).type().name() == typeid(tuple<any &>).name()) {
 									if (debug) cout << "continue\n";
 									if ((*it_i).at(k).type().name() == typeid(tuple<any &>).name()) {
@@ -270,7 +271,7 @@ int main()
 							}
 						}
 						if (equal) {
-							string s = vec2Str(*it_j, true);
+							string s = vec2Str(*it_j, mapSA, true);
 							if (debug) cout << s << endl;
 							vector<string> sv;
 							split(s, sv, ',');
@@ -310,14 +311,14 @@ int main()
 				jj = 0;
 
 				for (vector<vector<any>>::const_iterator it_i = privateTuple.begin(); it_i != privateTuple.end(); ++it_i) {
-					if (debug) cout << "ServerTuple: " << vec2Str(*it_i, false) << (*it_i).size() << ii << endl;
+					if (debug) cout << "ServerTuple: " << vec2Str(*it_i, mapSA, false) << (*it_i).size() << ii << endl;
 					jj = 0;
 					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
-						if (debug) cout << "vvaSeq: " << vec2Str(*it_j, false) << (*it_j).size() << jj << endl;
-						if (vec2Str(*it_i, false) == vec2Str(*it_j, false)) {
+						if (debug) cout << "vvaSeq: " << vec2Str(*it_j, mapSA, false) << (*it_j).size() << jj << endl;
+						if (vec2Str(*it_i, mapSA, false) == vec2Str(*it_j, mapSA, false)) {
 							(sharedTuple[any_cast<int>((*it_j).at(0))]).assign((*it_j).begin(), (*it_j).end());
 							exist = true;
-							if (debug) cout << "exist: " << vec2Str(*it_j, false) << (*it_j).size() << jj << endl;
+							if (debug) cout << "exist: " << vec2Str(*it_j, mapSA, false) << (*it_j).size() << jj << endl;
 							break;
 						}
 						jj++;
