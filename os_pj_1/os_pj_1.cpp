@@ -58,22 +58,22 @@ string vec2Str(vector<any>v, bool compare)
 		{
 			if (compare) {
 				if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
-					result += get<0>(any_cast<pair<string, tuple<any &> >>(vecAny.front())) + ",";
+					result += get<0>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front())) + ",";
 				}
 			}
 			else {
 				if (vecAny.front().type().name() == typeid(int).name()) {
-					result += to_string(any_cast<int>(vecAny.front())) + ",";
+					result += to_string(std::any_cast<int>(vecAny.front())) + ",";
 				}
 				else if (vecAny.front().type().name() == typeid(string).name()) {
-					result += "\"" + any_cast<string>(vecAny.front()) + "\",";
+					result += "\"" + std::any_cast<string>(vecAny.front()) + "\",";
 				}
 				else if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
-					if ((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
-						result += to_string(any_cast<int>((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))))) + ",";
+					if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
+						result += to_string(std::any_cast<int>((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))))) + ",";
 					}
-					else if ((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(string).name()) {
-						result += "\"" + any_cast<string>(get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))) + "\",";
+					else if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(string).name()) {
+						result += "\"" + std::any_cast<string>(get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))) + "\",";
 					}
 				}
 				else {
@@ -132,7 +132,7 @@ int main()
 							try {
 								privateTuple.push_back(sharedTuple[stoi(threadNum)]);
 								save2txt(privateTuple, threadNum);
-								if (debug) cout << "Thread_" + to_string(any_cast<int>(sharedTuple[stoi(threadNum)].at(0))) + " >> " + any_cast<string>(sharedTuple[stoi(threadNum)].at(1)) + " done!\n";
+								if (debug) cout << "Thread_" + to_string(std::any_cast<int>(sharedTuple[stoi(threadNum)].at(0))) + " >> " + std::any_cast<string>(sharedTuple[stoi(threadNum)].at(1)) + " done!\n";
 								sharedTuple[stoi(threadNum)].clear();
 							}
 							catch (exception ex) {
@@ -193,15 +193,15 @@ int main()
 					input = res.suffix();
 				}
 				
-				int c = any_cast<int>(vaInput.at(0));
-				string i = any_cast<string>(vaInput.at(1));
+				int c = std::any_cast<int>(vaInput.at(0));
+				string i = std::any_cast<string>(vaInput.at(1));
 
 				if (c > stoi(threadCNT) + 1) { if (debug) cout << "Error: Not an exist client\n"; continue; }
 				if (i != "out" && i != "in" && i != "read") { if (debug) cout << "illegl input!!\n"; continue; }
 
 				bool exist = false;
 				for (vector<vector<any>>::const_iterator it = vvaSeq.begin(); it != vvaSeq.end(); ++it)
-					if (any_cast<int>((*it).at(0)) == any_cast<int>(vaInput.at(0)))
+					if (std::any_cast<int>((*it).at(0)) == std::any_cast<int>(vaInput.at(0)))
 						exist = true;
 
 				if (!exist) {
@@ -232,11 +232,11 @@ int main()
 								if ((*it_j).at(k).type().name() == typeid(pair <string, tuple<any &>>).name()) {
 									if (debug) cout << "continue\n";
 									if ((*it_i).at(k).type().name() == typeid(pair <string, tuple<any &>>).name()) {
-										if (get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(int).name()) {
-											v.push_back(any_cast<int>(get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
+										if (get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(int).name()) {
+											v.push_back(std::any_cast<int>(get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
 										}
-										else if (get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(string).name()) {
-											v.push_back(any_cast<string>(get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
+										else if (get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(string).name()) {
+											v.push_back(std::any_cast<string>(get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
 										}
 									}
 									else { //string, int
@@ -247,15 +247,15 @@ int main()
 								//if(debug) cout << (*it_i).at(k).type().name() << "|" << (*it_j).at(k).type().name() << endl;
 								if ((*it_i).at(k).type().name() == (*it_j).at(k).type().name()) {
 									if ((*it_i).at(k).type().name() == typeid(string).name()) {
-										//if(debug) cout << any_cast<string>((*it_i).at(k)) << "|" << any_cast<string>((*it_j).at(k)) << endl;
-										if (any_cast<string>((*it_i).at(k)) != any_cast<string>((*it_j).at(k))) {
+										//if(debug) cout << std::any_cast<string>((*it_i).at(k)) << "|" << std::any_cast<string>((*it_j).at(k)) << endl;
+										if (std::any_cast<string>((*it_i).at(k)) != std::any_cast<string>((*it_j).at(k))) {
 											equal = false;
 											break;
 										}
 									}
 									else if ((*it_i).at(k).type().name() == typeid(int).name()) {
-										//if(debug) cout << any_cast<int>((*it_i).at(k)) << "|" << any_cast<int>((*it_j).at(k)) << endl;
-										if (any_cast<int>((*it_i).at(k)) != any_cast<int>((*it_j).at(k))) {
+										//if(debug) cout << std::any_cast<int>((*it_i).at(k)) << "|" << std::any_cast<int>((*it_j).at(k)) << endl;
+										if (std::any_cast<int>((*it_i).at(k)) != std::any_cast<int>((*it_j).at(k))) {
 											equal = false;
 											break;
 										}
@@ -285,20 +285,20 @@ int main()
 								string* a = &sv[0];
 								int aa = 0;
 								for (vector<any>::const_iterator iv = v.begin(); iv != v.end(); ++iv) {
-									//if(debug) cout << any_cast<string>(a[aa]) << endl;
+									//if(debug) cout << std::any_cast<string>(a[aa]) << endl;
 									//if(debug) cout << (*iv).type().name() << endl;
 									//try {
-									//	if(debug) cout << any_cast<string>(*iv) << endl;
+									//	if(debug) cout << std::any_cast<string>(*iv) << endl;
 									//}
 									//catch (exception ex) {
 									//	try {
-									//		if(debug) cout << any_cast<int>(*iv) << endl;
+									//		if(debug) cout << std::any_cast<int>(*iv) << endl;
 									//	}
 									//	catch (exception ex) {
-									//		//if(debug) cout << any_cast<void>(*iv) << endl;
+									//		//if(debug) cout << std::any_cast<void>(*iv) << endl;
 									//	}
 									//}
-									mapSA[any_cast<string>(a[aa])] = *iv;
+									mapSA[std::any_cast<string>(a[aa])] = *iv;
 									aa++;
 								}
 							}
@@ -318,7 +318,7 @@ int main()
 					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
 						if (debug) cout << "vvaSeq: " << vec2Str(*it_j, false) << (*it_j).size() << jj << endl;
 						if (vec2Str(*it_i, false) == vec2Str(*it_j, false)) {
-							(sharedTuple[any_cast<int>((*it_j).at(0))]).assign((*it_j).begin(), (*it_j).end());
+							(sharedTuple[std::any_cast<int>((*it_j).at(0))]).assign((*it_j).begin(), (*it_j).end());
 							exist = true;
 							if (debug) cout << "exist: " << vec2Str(*it_j, false) << (*it_j).size() << jj << endl;
 							break;
@@ -332,7 +332,7 @@ int main()
 				}
 
 				if (exist) {
-					if (any_cast<string>((vvaSeq[jj]).at(1)) == "in") {
+					if (std::any_cast<string>((vvaSeq[jj]).at(1)) == "in") {
 						if (debug) cout << "exist" << ii << jj << endl;
 						privateTuple.erase(privateTuple.begin() + ii);
 						save2txt(privateTuple, "server");
