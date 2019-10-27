@@ -173,9 +173,8 @@ int main()
 						if (string(res[0])[0] == '"')
 							vaInput.push_back(string(res[0]).substr(1, string(res[0]).length() - 2));
 						else if (string(res[0])[0] == '?') {
-							mapSA[string(res[0]).substr(1)] = string(res[0]).substr(1);
-							int i = 9;
-							vaInput.push_back(tie(i));
+							//mapSA[string(res[0]).substr(1)] = string(res[0]).substr(1);
+							vaInput.push_back(tie(mapSA[string(res[0]).substr(1)]));
 						}
 						else if (string(res[0]) == "read" || string(res[0]) == "out" || string(res[0]) == "in")
 							vaInput.push_back(string(res[0]));
@@ -183,9 +182,8 @@ int main()
 							vaInput.push_back(stoi(res[0]));
 					}
 					catch (invalid_argument ia) {
-						mapSA[string(res[0])] = string(res[0]);
-						int i = 9;
-						vaInput.push_back(tie(i));
+						//mapSA[string(res[0])] = string(res[0]);
+						vaInput.push_back(tie(mapSA[string(res[0])]));
 						if (debug) cout << "badcast!!\n";
 					}
 
