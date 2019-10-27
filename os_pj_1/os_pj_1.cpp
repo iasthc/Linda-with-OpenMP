@@ -232,12 +232,12 @@ int main()
 								if ((*it_j).at(k).type().name() == typeid(pair <string, tuple<any &>>).name()) {
 									if (debug) cout << "continue\n";
 									if ((*it_i).at(k).type().name() == typeid(pair <string, tuple<any &>>).name()) {
-										if (get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(int).name()) {
+										/*if (get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(int).name()) {
 											v.push_back(std::any_cast<int>(get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
 										}
 										else if (get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(string).name()) {
 											v.push_back(std::any_cast<string>(get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
-										}
+										}*/
 									}
 									else { //string, int
 										v.push_back((*it_i).at(k));
