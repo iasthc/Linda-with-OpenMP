@@ -42,56 +42,49 @@ static string readFromFile(int threadCNT) {
 
 string vec2Str(vector<any>v, bool compare)
 {
-	try {
+	string result = "";
+	vector<any> vecAny = v;
+	vecAny.assign(v.begin(), v.end());
+	if (vecAny.size() > 2) {
+		vecAny.erase(vecAny.begin());//Client
+		vecAny.erase(vecAny.begin());//Instruction
+	}
 
 
-		string result = "";
-		vector<any> vecAny = v;
-		vecAny.assign(v.begin(), v.end());
-		if (vecAny.size() > 2) {
-			vecAny.erase(vecAny.begin());//Client
-			vecAny.erase(vecAny.begin());//Instruction
+	while (vecAny.empty() == false)
+	{
+		if (compare) {
+			if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
+				result += get<0>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front())) + ",";
+			}
 		}
-
-
-		while (vecAny.empty() == false)
-		{
-			if (compare) {
-				if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
-					result += get<0>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front())) + ",";
+		else {
+			if (vecAny.front().type().name() == typeid(int).name()) {
+				result += to_string(std::any_cast<int>(vecAny.front())) + ",";
+			}
+			else if (vecAny.front().type().name() == typeid(string).name()) {
+				result += "\"" + std::any_cast<string>(vecAny.front()) + "\",";
+			}
+			else if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
+				/*if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
+					result += to_string(std::any_cast<int>((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))))) + ",";
 				}
+				else if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(string).name()) {
+					result += "\"" + std::any_cast<string>(get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))) + "\",";
+				}*/
 			}
 			else {
-				if (vecAny.front().type().name() == typeid(int).name()) {
-					result += to_string(std::any_cast<int>(vecAny.front())) + ",";
-				}
-				else if (vecAny.front().type().name() == typeid(string).name()) {
-					result += "\"" + std::any_cast<string>(vecAny.front()) + "\",";
-				}
-				else if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
-					/*if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
-						result += to_string(std::any_cast<int>((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))))) + ",";
-					}
-					else if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(string).name()) {
-						result += "\"" + std::any_cast<string>(get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))) + "\",";
-					}*/
-				}
-				else {
-					if (debug) cout << vecAny.front().type().name() << endl;
-				}
+				if (debug) cout << vecAny.front().type().name() << endl;
 			}
+		}
 
-			vecAny.erase(vecAny.begin());
-		}
-		result = result.substr(0, result.length() - 1);
-		if (compare) {
-			return result;
-		}
-		return "(" + result + ")";
+		vecAny.erase(vecAny.begin());
 	}
-	catch (exception ex) {
-		if (debug) cout << ex.what() + '\n';
+	result = result.substr(0, result.length() - 1);
+	if (compare) {
+		return result;
 	}
+	return "(" + result + ")";
 }
 
 static void save2txt(vector<vector<any>>& vvaTuple, string fileName) {
@@ -192,7 +185,7 @@ int main()
 
 					input = res.suffix();
 				}
-				
+
 				int c = std::any_cast<int>(vaInput.at(0));
 				string i = std::any_cast<string>(vaInput.at(1));
 
