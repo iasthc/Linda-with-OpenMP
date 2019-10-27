@@ -69,12 +69,12 @@ string vec2Str(vector<any>v, bool compare)
 					result += "\"" + std::any_cast<string>(vecAny.front()) + "\",";
 				}
 				else if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
-					if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
+					/*if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
 						result += to_string(std::any_cast<int>((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))))) + ",";
 					}
 					else if ((get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(string).name()) {
 						result += "\"" + std::any_cast<string>(get<0>(std::any_cast<tuple<any &>>(get<1>(std::any_cast<pair<string, tuple<any &> >>(vecAny.front()))))) + "\",";
-					}
+					}*/
 				}
 				else {
 					if (debug) cout << vecAny.front().type().name() << endl;
