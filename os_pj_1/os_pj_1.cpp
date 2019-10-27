@@ -67,10 +67,7 @@ string vec2Str(vector<any>v, bool compare)
 			}
 			else if (vecAny.front().type().name() == typeid(pair<string, tuple<any &> >).name()) {
 				if ((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(int).name()) {
-					auto a = any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front())));
-					auto b = get<0>(a);
-					int tmp = any_cast<int>(b);
-					result += to_string(tmp) + ",";
+					
 					//result += to_string(any_cast<int>((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))))) + ",";
 				}
 				/*else if ((get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair<string, tuple<any &> >>(vecAny.front()))))).type().name() == typeid(string).name()) {
@@ -175,7 +172,8 @@ int main()
 						if (string(res[0])[0] == '"')
 							vaInput.push_back(string(res[0]).substr(1, string(res[0]).length() - 2));
 						else if (string(res[0])[0] == '?') {
-							vaInput.push_back(make_pair(string(res[0]).substr(1), tie(mapSA[string(res[0]).substr(1)])));
+							mapSA[string(res[0]).substr(1)] = string(res[0]).substr(1);
+							vaInput.push_back(tie(mapSA[string(res[0]).substr(1)]));
 						}
 						else if (string(res[0]) == "read" || string(res[0]) == "out" || string(res[0]) == "in")
 							vaInput.push_back(string(res[0]));
@@ -183,7 +181,8 @@ int main()
 							vaInput.push_back(stoi(res[0]));
 					}
 					catch (invalid_argument ia) {
-						vaInput.push_back(make_pair(string(res[0]), tie(mapSA[string(res[0])])));
+						mapSA[string(res[0])] = string(res[0]);
+						vaInput.push_back(tie(mapSA[string(res[0])]));
 						if (debug) cout << "badcast!!\n";
 					}
 
@@ -226,15 +225,16 @@ int main()
 						for (int k = 2; k < (*it_j).size(); k++) {
 							//if(debug) cout << k << "\n";
 							if ((*it_i).size() == (*it_j).size()) {
-								if ((*it_j).at(k).type().name() == typeid(pair <string, tuple<any &>>).name()) {
+								if (debug) cout << (*it_j).at(k).type().name() <<endl;
+								if ((*it_j).at(k).type().name() == typeid(tuple<any &>).name()) {
 									if (debug) cout << "continue\n";
-									if ((*it_i).at(k).type().name() == typeid(pair <string, tuple<any &>>).name()) {
-										/*if (get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(int).name()) {
-											v.push_back(any_cast<int>(get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
+									if ((*it_i).at(k).type().name() == typeid(tuple<any &>).name()) {
+										if (get<0>(any_cast<tuple<any &>>((*it_i).at(k))).type().name() == typeid(int).name()) {
+											v.push_back(any_cast<int>(get<0>(any_cast<tuple<any &>>((*it_i).at(k)))));
 										}
-										else if (get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k))))).type().name() == typeid(string).name()) {
-											v.push_back(any_cast<string>(get<0>(any_cast<tuple<any &>>(get<1>(any_cast<pair <string, tuple<any &>>>((*it_i).at(k)))))));
-										}*/
+										else if (get<0>(any_cast<tuple<any &>>((*it_i).at(k))).type().name() == typeid(string).name()) {
+											v.push_back(any_cast<string>(get<0>(any_cast<tuple<any &>>((*it_i).at(k)))));
+										}
 									}
 									else { //string, int
 										v.push_back((*it_i).at(k));
