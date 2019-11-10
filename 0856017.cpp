@@ -120,7 +120,6 @@ int main()
 			ofstream ofs("./" + threadNum + ".txt");
 			try {
 				while (!exit) {
-#pragma omp critical
 					{
 						if (!sharedTuple[stoi(threadNum)].empty()) {
 							try {
