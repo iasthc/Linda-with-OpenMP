@@ -159,16 +159,18 @@ tuple directly by server thread.
 ## Test Case
 ```
 3
-1 out “abc” 2 “x”
-2 in “abc” “2” ?j
-3 in “abc” 2 ?i
-3 in “abc” “2” 7
-1 out “abc” “2” 7
-1 out “def” j i
+1 out "abc" 2 "x"
+2 in "abc" "2" ?j
+3 in "abc" 2 ?i
+3 in "abc" "2" 7
+1 out "abc" "2" 7
+1 out "def" j i
 1 out 1 2 3
 2 read "def" ?a ?b
 2 in "def" a b
 1 out "abc" "2" 7
-
 exit
 ```
+
+>g++ -std=c++17 0856017.cpp -fopenmp
+>./a.out < input.txt

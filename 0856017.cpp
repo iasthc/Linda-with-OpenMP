@@ -1,4 +1,8 @@
-﻿#include <omp.h>
+﻿/*
+	g++ -std=c++17 0856017.cpp -fopenmp
+*/
+
+#include <omp.h>
 #include <vector>
 #include <iostream>
 #include <string>
@@ -25,6 +29,7 @@ void split(const string& s, vector<string>& sv, const char delim = ' ') {
 	return;
 }
 
+/*
 static string readFromFile(int threadCNT) {
 
 	string result = "==========\n";
@@ -40,6 +45,7 @@ static string readFromFile(int threadCNT) {
 	}
 	return result + "==========\n";
 }
+*/
 
 string vec2Str(vector<any>v) {
 
@@ -81,8 +87,18 @@ static void save2txt(vector<vector<any>>& vvaTuple, string fileName) {
 	if (content.length() > 0) {
 		content = content.substr(0, content.length() - 1);
 	}
-	ofstream ofs("./" + fileName + ".txt");
-	ofs << "(" + content + ")";
+
+ 	ofstream ofs;
+  	ofs.open("./" + fileName + ".txt", std::ios_base::app);
+	ofs << "(" + content + ")\n"; 
+}
+
+static void save2txt(vector<any>& vaTuple, string fileName) { //client
+
+	string content = vec2Str(vaTuple);
+ 	ofstream ofs;
+  	ofs.open("./" + fileName + ".txt", std::ios_base::app);
+	ofs << content + "\n"; 
 }
 
 int main()
@@ -97,7 +113,6 @@ int main()
 #pragma omp parallel num_threads(stoi(threadCNT) + 1) 
 	{
 		string threadNum = to_string(omp_get_thread_num());
-		vector<vector<any>> privateTuple;
 
 		if (omp_get_thread_num() > 0) {
 
@@ -109,11 +124,10 @@ int main()
 					{
 						if (!sharedTuple[stoi(threadNum)].empty()) {
 							try {
-								privateTuple.push_back(sharedTuple[stoi(threadNum)]);
-								save2txt(privateTuple, threadNum);
+								save2txt(sharedTuple[stoi(threadNum)], threadNum);
 								if (debug) cout << "Thread_" + to_string(any_cast<int>(sharedTuple[stoi(threadNum)].at(0))) + " >> " + any_cast<string>(sharedTuple[stoi(threadNum)].at(1)) + " done!\n";
 								sharedTuple[stoi(threadNum)].clear();
-								if (readFiles) cout << readFromFile(stoi(threadCNT));
+								//if (readFiles) cout << readFromFile(stoi(threadCNT));
 							}
 							catch (exception ex) {
 								if (debug) cout << "Client Exception:" + (string)ex.what() + '\n';
@@ -131,6 +145,8 @@ int main()
 #pragma omp master
 
 		try {
+			vector<vector<any>> privateTuple;
+
 			if (debug) cout << "SERVER: " + threadNum + '\n';
 			ofstream ofst("./server.txt");
 
@@ -143,7 +159,20 @@ int main()
 				input = ""; //reset
 				getline(cin, input);
 
-				if (input == "exit") { exit = true; break; }
+				if (input == "exit") { 
+					while(!exit){
+						int cnt = 0;
+						for (vector<vector<any>>::const_iterator i = sharedTuple.begin(); i != sharedTuple.end(); ++i) {
+							if ((*i).empty()){
+								cnt++;	
+							}
+						}
+						if(cnt==sharedTuple.size()){
+							exit = true; 
+						}
+					}
+					break; 
+				}
 
 				size_t n = count(input.begin(), input.end(), ' ');
 				if (n < 2) { if (debug) cout << "Error: wrong quantiy of parameters\n"; continue; }
@@ -194,9 +223,9 @@ int main()
 					if (debug) cout << "Thread_" + to_string(c) + " is waiting for " + i + "\n";
 					if (i == "out") {
 						privateTuple.push_back(vaInput);
-						save2txt(privateTuple, "server");
+						//save2txt(privateTuple, "server");
 						if (debug) cout << "Thread_" + to_string(c) + " >> " + i + " done!\n";
-						if (readFiles) cout << readFromFile(stoi(threadCNT));
+						//if (readFiles) cout << readFromFile(stoi(threadCNT));
 					}
 					else if (i == "in" || i == "read") {
 						vvaSeq.push_back(vaInput);
@@ -315,9 +344,13 @@ int main()
 					if (any_cast<string>((vvaSeq[jj]).at(1)) == "in") {
 						if (debug) cout << "exist" << ii << jj << endl;
 						privateTuple.erase(privateTuple.begin() + ii);
-						save2txt(privateTuple, "server");
+						//save2txt(privateTuple, "server");
 					}
 					vvaSeq.erase(vvaSeq.begin() + jj);
+				}
+
+				if(( exist || i=="out" ) && i!="read"){
+					save2txt(privateTuple, "server");
 				}
 			}
 		}
