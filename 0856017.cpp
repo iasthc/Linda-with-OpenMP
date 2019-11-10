@@ -10,6 +10,7 @@
 #include <sstream>
 #include <any>
 #include <map>
+#include <queue>
 using namespace std;
 
 string vec2Str(vector<any>v) {
@@ -51,7 +52,7 @@ int main()
 
 	//omp variable
 	bool exit = false;
-	vector<vector<any>> sharedTuple(stoi(threadCNT) + 1);
+	vector<queue<vector<any>>> sharedTuple(stoi(threadCNT) + 1);
 
 #pragma omp parallel num_threads(stoi(threadCNT) + 1) 
 	{
@@ -65,12 +66,12 @@ int main()
 					{
 						if (!sharedTuple[stoi(threadNum)].empty()) {
 							try {
-								string content = vec2Str(sharedTuple[stoi(threadNum)]);
+								string content = vec2Str(sharedTuple[stoi(threadNum)].front());
 								ofstream ofs;
 								ofs.open("./" + threadNum + ".txt", std::ios_base::app);
 								ofs << content + "\n"; 
-								ofs.close();
-								sharedTuple[stoi(threadNum)].clear();
+
+								sharedTuple[stoi(threadNum)].pop();
 							}
 							catch (exception ex) {
 								cout << "Client Exception of ofs:" + (string)ex.what() + '\n';
@@ -101,7 +102,7 @@ int main()
 				if (input == "exit") { 
 					while(!exit){
 						int cnt = 0;
-						for (vector<vector<any>>::const_iterator i = sharedTuple.begin(); i != sharedTuple.end(); ++i) {
+						for (vector<queue<vector<any>>>::const_iterator i = sharedTuple.begin(); i != sharedTuple.end(); ++i) {
 							if ((*i).empty()){
 								cnt++;	
 							}
@@ -175,17 +176,13 @@ int main()
 				bool equal = true;
 				for (vector<vector<any>>::const_iterator it_i = privateTuple.begin(); it_i != privateTuple.end(); ++it_i) {
 					jj = 0;
-
 					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
 						equal = true;
 						vector<any> v;
-
 						for (int k = 2; k < (*it_j).size(); k++) {
 							if ((*it_i).size() == (*it_j).size()) {
 								if ((*it_j).at(k).type().name() == typeid(string).name()) {
-									if (any_cast<string>((*it_j).at(k))[0] == '?') {
-										continue;
-									}
+									if (any_cast<string>((*it_j).at(k))[0] == '?') { continue;}
 								}
 								if ((*it_i).at(k).type().name() == (*it_j).at(k).type().name()) {
 									if ((*it_i).at(k).type().name() == typeid(string).name()) {
@@ -246,16 +243,10 @@ int main()
 				for (vector<vector<any>>::const_iterator it_i = privateTuple.begin(); it_i != privateTuple.end(); ++it_i) {
 					jj = 0;
 					for (vector<vector<any>>::const_iterator it_j = vvaSeq.begin(); it_j != vvaSeq.end(); ++it_j) {
-						if (vec2Str(*it_i) == vec2Str(*it_j)) {
-							(sharedTuple[any_cast<int>((*it_j).at(0))]).assign((*it_j).begin(), (*it_j).end());
-							exist = true;
-							break;
-						}
+						if (vec2Str(*it_i) == vec2Str(*it_j)) { exist = true; break; }
 						jj++;
 					}
-					if (exist) {
-						break;
-					}
+					if (exist) { break;}
 					ii++;
 				}
 
@@ -263,6 +254,9 @@ int main()
 					if (any_cast<string>((vvaSeq[jj]).at(1)) == "in") {
 						privateTuple.erase(privateTuple.begin() + ii);
 					}
+					vector<any> tmp;
+					tmp.assign((vvaSeq[jj]).begin(), (vvaSeq[jj]).end());
+					sharedTuple[any_cast<int>((vvaSeq[jj]).at(0))].push(tmp);
 					vvaSeq.erase(vvaSeq.begin() + jj);
 				}
 
@@ -278,7 +272,6 @@ int main()
 					ofstream ofs;
 					ofs.open("./server.txt", std::ios_base::app);
 					ofs << "(" + content + ")\n"; 
-					ofs.close();
 				}
 			}
 		}
