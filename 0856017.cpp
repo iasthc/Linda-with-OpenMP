@@ -69,6 +69,7 @@ int main()
 								ofstream ofs;
 								ofs.open("./" + threadNum + ".txt", std::ios_base::app);
 								ofs << content + "\n"; 
+								ofs.close();
 								sharedTuple[stoi(threadNum)].clear();
 							}
 							catch (exception ex) {
@@ -277,6 +278,7 @@ int main()
 					ofstream ofs;
 					ofs.open("./server.txt", std::ios_base::app);
 					ofs << "(" + content + ")\n"; 
+					ofs.close();
 				}
 			}
 		}
