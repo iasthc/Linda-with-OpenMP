@@ -168,6 +168,7 @@ int main()
 					}
 				}
 				else {
+					return ;
 					//cout << "Thread_" + to_string(c) + " is suspended\n";
 				}
 				int ii, jj;
