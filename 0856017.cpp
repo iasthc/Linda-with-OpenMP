@@ -166,12 +166,7 @@ int main()
 					else if (i == "in" || i == "read") {
 						vvaSeq.push_back(vaInput);
 					}
-				}
-				else {
-					return ;
-					//cout << "Thread_" + to_string(c) + " is suspended\n";
-				}
-				int ii, jj;
+					int ii, jj;
 				ii = 0;
 				jj = 0;
 				bool equal = true;
@@ -274,6 +269,11 @@ int main()
 					ofs.open("./server.txt", std::ios_base::app);
 					ofs << "(" + content + ")\n"; 
 				}
+				}
+				else {
+					//cout << "Thread_" + to_string(c) + " is suspended\n";
+				}
+				
 			}
 		}
 		catch (exception ex) {
